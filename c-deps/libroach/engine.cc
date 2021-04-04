@@ -116,7 +116,13 @@ DBImpl::DBImpl(rocksdb::DB* r, std::unique_ptr<EnvManager> e, std::shared_ptr<ro
       rep_deleter(r),
       block_cache(bc),
       event_listener(event_listener),
-      iters_count(0) {}
+      iters_count(0) {
+        // set default write-options here.
+	
+        // there is no need to set write_options_.disable_wal
+        // it's default is false already
+        write_options_.sync = true;
+			}
 
 DBImpl::~DBImpl() {
   const rocksdb::Options& opts = rep->GetOptions();
@@ -135,13 +141,11 @@ DBStatus DBImpl::AssertPreClose() {
 }
 
 DBStatus DBImpl::Put(DBKey key, DBSlice value) {
-  rocksdb::WriteOptions options;
-  return ToDBStatus(rep->Put(options, EncodeKey(key), ToSlice(value)));
+  return ToDBStatus(rep->Put(write_options_, EncodeKey(key), ToSlice(value)));
 }
 
 DBStatus DBImpl::Merge(DBKey key, DBSlice value) {
-  rocksdb::WriteOptions options;
-  return ToDBStatus(rep->Merge(options, EncodeKey(key), ToSlice(value)));
+  return ToDBStatus(rep->Merge(write_options_, EncodeKey(key), ToSlice(value)));
 }
 
 DBStatus DBImpl::Get(DBKey key, DBString* value) {
@@ -151,19 +155,16 @@ DBStatus DBImpl::Get(DBKey key, DBString* value) {
 }
 
 DBStatus DBImpl::Delete(DBKey key) {
-  rocksdb::WriteOptions options;
-  return ToDBStatus(rep->Delete(options, EncodeKey(key)));
+  return ToDBStatus(rep->Delete(write_options_, EncodeKey(key)));
 }
 
 DBStatus DBImpl::SingleDelete(DBKey key) {
-  rocksdb::WriteOptions options;
-  return ToDBStatus(rep->SingleDelete(options, EncodeKey(key)));
+  return ToDBStatus(rep->SingleDelete(write_options_, EncodeKey(key)));
 }
 
 DBStatus DBImpl::DeleteRange(DBKey start, DBKey end) {
-  rocksdb::WriteOptions options;
   return ToDBStatus(
-      rep->DeleteRange(options, rep->DefaultColumnFamily(), EncodeKey(start), EncodeKey(end)));
+      rep->DeleteRange(write_options_, rep->DefaultColumnFamily(), EncodeKey(start), EncodeKey(end)));
 }
 
 DBStatus DBImpl::CommitBatch(bool sync) { return FmtStatus("unsupported"); }

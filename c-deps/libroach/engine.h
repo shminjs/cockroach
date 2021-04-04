@@ -67,6 +67,8 @@ struct DBImpl : public DBEngine {
   std::shared_ptr<DBEventListener> event_listener;
   std::atomic<int64_t> iters_count;
 
+  rocksdb::WriteOptions write_options_;
+
   // Construct a new DBImpl from the specified DB.
   // The DB and passed Envs will be deleted when the DBImpl is deleted.
   // Either env can be NULL.
